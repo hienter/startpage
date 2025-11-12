@@ -1,0 +1,138 @@
+<!-- 시작 페이지 설정 모달 -->
+<div id="homepageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-black">시작 페이지로 설정하기</h2>
+            <button id="closeHomepageModal" class="text-gray-400 hover:text-black transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- 현재 URL 표시 -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-2">설정할 주소:</p>
+                <p class="text-sm font-mono text-black break-all" id="currentUrl"></p>
+            </div>
+            
+            <!-- Chrome 설정 방법 -->
+            <div class="space-y-4">
+                <h3 class="text-base font-semibold text-black">Chrome 설정 방법</h3>
+                
+                <div class="border-2 border-gray-200 rounded-lg p-4">
+                    <ol class="text-sm text-gray-700 space-y-1 ml-7 list-decimal">
+                        <li>주소창 오른쪽의 <strong>⋮</strong> (점 3개) 메뉴 클릭</li>
+                        <li><strong>설정</strong> 선택</li>
+                        <li>왼쪽 메뉴에서 <strong>시작 그룹</strong> 클릭</li>
+                        <li><strong>시작 시</strong> 설정 클릭</li>
+                        <li><strong>특정 페이지 또는 페이지 모음 열기</strong> 선택</li>
+                        <li><strong>새 페이지 추가</strong> 클릭 후 위 주소 입력</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- 빠른 복사 버튼 -->
+            <div class="flex gap-2">
+                <button id="copyUrlBtn" class="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                    주소 복사하기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 중복 초기화 방지
+        if (window.homepageModalInitialized) {
+            return;
+        }
+        window.homepageModalInitialized = true;
+        
+        function initHomepageModal() {
+            const homepageModal = document.getElementById('homepageModal');
+            const closeHomepageModal = document.getElementById('closeHomepageModal');
+            const copyUrlBtn = document.getElementById('copyUrlBtn');
+            const currentUrlElement = document.getElementById('currentUrl');
+            
+            if (!homepageModal || !closeHomepageModal || !copyUrlBtn || !currentUrlElement) {
+                console.warn('Homepage modal elements not found');
+                return;
+            }
+            
+            // 현재 URL 설정
+            currentUrlElement.textContent = window.location.href;
+            
+            // 모달 닫기 함수
+            function closeModalFunc(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                homepageModal.classList.add('hidden');
+            }
+            
+            // 닫기 버튼 클릭 이벤트
+            closeHomepageModal.onclick = function(e) {
+                closeModalFunc(e);
+            };
+            
+            // 주소 복사 버튼 클릭 이벤트
+            copyUrlBtn.onclick = async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    copyUrlBtn.textContent = '복사 완료!';
+                    copyUrlBtn.classList.remove('bg-black', 'hover:bg-gray-800');
+                    copyUrlBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    
+                    setTimeout(() => {
+                        copyUrlBtn.textContent = '주소 복사하기';
+                        copyUrlBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        copyUrlBtn.classList.add('bg-black', 'hover:bg-gray-800');
+                    }, 2000);
+                } catch (error) {
+                    console.error('주소 복사 실패:', error);
+                    alert('주소 복사에 실패했습니다. 수동으로 복사해주세요.');
+                }
+            };
+            
+            // 모달 배경 클릭 시 닫기
+            homepageModal.onclick = function(e) {
+                if (e.target === homepageModal) {
+                    closeModalFunc(e);
+                }
+            };
+            
+            // 모달 내부 클릭 시 이벤트 전파 방지
+            const modalContent = homepageModal.querySelector('div > div');
+            if (modalContent) {
+                modalContent.onclick = function(e) {
+                    if (!e.target.closest('button')) {
+                        e.stopPropagation();
+                    }
+                };
+            }
+        }
+        
+        // DOM이 로드되면 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHomepageModal);
+        } else {
+            initHomepageModal();
+        }
+        
+        // 전역 함수로 모달 열기 함수 등록
+        window.openHomepageModal = function() {
+            const homepageModal = document.getElementById('homepageModal');
+            if (homepageModal) {
+                homepageModal.classList.remove('hidden');
+            }
+        };
+    })();
+</script>
+

@@ -1,0 +1,105 @@
+{% load django_browser_reload %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="내장기 - 내 장기요양기관 관리하기. 장기요양기관의 디데이 관리, 서비스 유형 설정, 개발 예정 기능 투표 등을 한 곳에서 관리하세요.">
+    <meta name="keywords" content="장기요양기관, 내장기, 디데이, 관리, 장기요양">
+    <title>{% block title %}내장기: 내 장기요양기관 관리하기{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+        }
+        .clock-digit {
+            font-variant-numeric: tabular-nums;
+        }
+        .highlight-yellow {
+            background: linear-gradient(180deg, transparent 60%, #FEF08A 60%);
+            padding: 0 2px;
+        }
+        
+        /* 디자인 시스템 - 컬러 스킴 */
+        :root {
+            --color-dark-start: #1f2937; /* gray-800 */
+            --color-dark-end: #111827; /* gray-900 */
+            --color-dark-hover-start: #374151; /* gray-700 */
+            --color-dark-hover-end: #1f2937; /* gray-800 */
+            --color-dark-border: #111827; /* gray-900 */
+        }
+        
+        /* 다크 배경 클래스 */
+        .bg-dark-gradient {
+            background: linear-gradient(to right, var(--color-dark-start), var(--color-dark-end));
+        }
+        
+        .bg-dark-gradient-hover:hover {
+            background: linear-gradient(to right, var(--color-dark-hover-start), var(--color-dark-hover-end));
+        }
+        
+        .border-dark {
+            border-color: var(--color-dark-border);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-white min-h-screen text-black relative">
+    <div class="w-full flex flex-col items-center px-4 md:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </div>
+    
+    <!-- 카카오톡 오픈채팅방 입장 플로팅 버튼 (모든 페이지) -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <a 
+            href="https://open.kakao.com/o/gPtUG8oh" 
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center px-5 py-3 bg-yellow-300 hover:bg-yellow-400 text-black text-sm font-medium rounded-full shadow-lg transition-all hover:shadow-xl hover:scale-105">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+            </svg>
+            내장기 소통방
+        </a>
+    </div>
+    
+    {% block scripts %}{% endblock %}
+    <script>
+        // 디폴트 서비스 선택 집계 (페이지 로드 시 한 번만)
+        (function() {
+            // 이미 집계되었는지 확인
+            const defaultServiceTracked = localStorage.getItem('defaultServiceTracked');
+            
+            if (!defaultServiceTracked) {
+                // localStorage에서 선택된 서비스 확인
+                let selectedService = localStorage.getItem('selectedService');
+                
+                // 저장된 값이 없으면 기본값으로 방문요양 설정
+                if (!selectedService) {
+                    selectedService = 'visitCare';
+                    localStorage.setItem('selectedService', selectedService);
+                }
+                
+                // 서버에 기본 선택 통계 저장 (비동기, 에러 무시)
+                const formData = new FormData();
+                formData.append('service_type', selectedService);
+                
+                fetch('/api/save-service-preference/', {
+                    method: 'POST',
+                    body: formData
+                }).then(() => {
+                    // 집계 완료 플래그 설정
+                    localStorage.setItem('defaultServiceTracked', 'true');
+                }).catch((error) => {
+                    console.error('기본 서비스 선택 통계 저장 실패:', error);
+                    // 에러가 발생해도 플래그 설정 (중복 집계 방지)
+                    localStorage.setItem('defaultServiceTracked', 'true');
+                });
+            }
+        })();
+    </script>
+    {% django_browser_reload_script %}
+</body>
+</html>
+

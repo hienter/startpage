@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}개발 예정 기능 확인하기 - 내장기{% endblock %}
+
+{% block content %}
+    <!-- 탑 네비게이션 -->
+    {% include 'components/top_navigation.html' %}
+    
+    {% include 'components/homepage_setting_modal.html' %}
+    
+<div class="w-full max-w-[1280px] mx-auto px-6 md:px-8 lg:px-10 py-8">
+    <!-- 뒤로가기 링크 -->
+    <div class="mb-6">
+        <a href="{% url 'index' %}" class="inline-flex items-center text-sm text-gray-600 hover:text-black transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            홈으로 돌아가기
+        </a>
+    </div>
+    
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-black mb-2">개발 예정 기능 투표</h1>
+        <p class="text-gray-600">개발 예정 기능에 투표하여 우선순위를 결정할 수 있습니다.</p>
+    </div>
+    
+    <!-- 개발 예정 기능 투표 리스트 -->
+    <div class="space-y-3">
+        <!-- 기능 요청하기 카드 -->
+        <div class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-black transition-colors">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                    <h3 class="text-base font-semibold text-black whitespace-nowrap">기능 요청하기</h3>
+                    <div class="text-sm text-gray-500 flex-1 min-w-0">
+                        <span class="truncate block">새로운 기능을 제안하거나 개선 사항을 요청할 수 있습니다</span>
+                    </div>
+                    <div class="text-xs">
+                        <span class="inline-block px-2 py-1 bg-yellow-50 text-yellow-600 rounded whitespace-nowrap">요청</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    <a 
+                        href="https://open.kakao.com/o/gPtUG8oh" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="px-6 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap">
+                        기능 요청하기
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% for feature in features %}
+        <div class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-black transition-colors">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                    <h3 class="text-base font-semibold text-black whitespace-nowrap">{{ feature.name }}</h3>
+                    <div class="text-sm text-gray-500 flex-1 min-w-0">
+                        <span class="truncate block">{{ feature.description }}</span>
+                    </div>
+                    <div class="text-xs">
+                        {% if feature.type == 'ai_writing' %}
+                            <span class="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded whitespace-nowrap">AI 작성하기</span>
+                        {% else %}
+                            <span class="inline-block px-2 py-1 bg-green-50 text-green-600 rounded whitespace-nowrap">급여 유형</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    {% if feature.vote_count > 0 %}
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-semibold rounded-full whitespace-nowrap">
+                        {{ feature.vote_count }}표
+                    </span>
+                    {% endif %}
+                    <button 
+                        class="vote-btn px-6 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+                        data-feature-id="{{ feature.id }}"
+                        data-feature-name="{{ feature.name }}"
+                        data-service-type="{{ feature.service_type }}">
+                        투표하기
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12">
+            <p class="text-gray-400 text-lg">개발 예정 기능이 없습니다.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 세션별 투표 여부 확인 (localStorage 사용)
+    const VOTED_KEY = 'featureVotedInSession';
+    const hasVoted = localStorage.getItem(VOTED_KEY) === 'true';
+    
+    // 투표 버튼 이벤트
+    const voteButtons = document.querySelectorAll('.vote-btn');
+    
+    // 이미 투표했다면 모든 버튼 비활성화
+    if (hasVoted) {
+        voteButtons.forEach(button => {
+            button.disabled = true;
+            button.textContent = '이미 투표함';
+            button.classList.remove('bg-black', 'hover:bg-gray-800');
+            button.classList.add('bg-gray-400', 'cursor-not-allowed');
+        });
+        return;
+    }
+    
+    voteButtons.forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // 이미 투표했다면 중단
+            if (localStorage.getItem(VOTED_KEY) === 'true') {
+                alert('이 세션에서는 이미 투표하셨습니다.');
+                return;
+            }
+            
+            const featureId = this.getAttribute('data-feature-id');
+            const featureName = this.getAttribute('data-feature-name');
+            const serviceType = this.getAttribute('data-service-type');
+            
+            // 버튼 비활성화 (중복 클릭 방지)
+            const originalText = this.textContent;
+            this.disabled = true;
+            this.textContent = '투표 중...';
+            
+            // 투표 API 호출
+            try {
+                const formData = new FormData();
+                formData.append('feature_id', featureId);
+                formData.append('feature_name', featureName);
+                
+                const response = await fetch('/api/increment-feature-vote/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 세션 투표 완료 플래그 설정
+                    localStorage.setItem(VOTED_KEY, 'true');
+                    
+                    // 모든 투표 버튼 비활성화
+                    voteButtons.forEach(btn => {
+                        if (btn !== this) {
+                            btn.disabled = true;
+                            btn.textContent = '이미 투표함';
+                            btn.classList.remove('bg-black', 'hover:bg-gray-800');
+                            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                        }
+                    });
+                    
+                    // 투표 수 업데이트
+                    const card = this.closest('.bg-white');
+                    const voteBadge = card.querySelector('.bg-yellow-100');
+                    
+                    if (voteBadge) {
+                        voteBadge.textContent = `${data.click_count}표`;
+                    } else {
+                        // 투표 배지가 없으면 생성
+                        const buttonContainer = this.parentElement;
+                        const badge = document.createElement('span');
+                        badge.className = 'px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-semibold rounded-full whitespace-nowrap';
+                        badge.textContent = `${data.click_count}표`;
+                        buttonContainer.insertBefore(badge, this);
+                    }
+                    
+                    this.textContent = '투표 완료!';
+                    this.classList.remove('bg-black', 'hover:bg-gray-800');
+                    this.classList.add('bg-green-500', 'hover:bg-green-600');
+                    
+                    // 잠시 후 "이미 투표함"으로 변경
+                    setTimeout(() => {
+                        this.textContent = '이미 투표함';
+                        this.classList.remove('bg-green-500', 'hover:bg-green-600');
+                        this.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    }, 2000);
+                } else {
+                    alert('투표에 실패했습니다.');
+                    this.textContent = originalText;
+                    this.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('투표에 실패했습니다.');
+                this.textContent = originalText;
+                this.disabled = false;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+

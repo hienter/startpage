@@ -1,0 +1,88 @@
+<div class="text-center">
+    <div id="time" class="text-8xl font-light clock-digit mb-4 tracking-tight text-black">
+        오전 00:00
+    </div>
+    <div id="date" class="text-2xl font-light text-gray-600 mb-2">
+        2024년 1월 1일 월요일
+    </div>
+    <div id="selectedServiceDisplay" class="text-2xl font-light text-gray-600 inline-block">
+        <!-- 선택된 센터 설정이 여기에 표시됩니다 -->
+    </div>
+</div>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+        
+        // 12시간 형식으로 시간 포맷팅
+        let hours = now.getHours();
+        const ampm = hours >= 12 ? '오후' : '오전';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0시는 12시로 표시
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        // 날짜 포맷팅
+        const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+        const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+        
+        const year = now.getFullYear();
+        const month = months[now.getMonth()];
+        const day = now.getDate();
+        const weekday = weekdays[now.getDay()];
+        
+        // DOM 업데이트
+        document.getElementById('time').textContent = `${ampm} ${String(hours).padStart(2, '0')}:${minutes}`;
+        document.getElementById('date').textContent = `${year}년 ${month} ${day}일 ${weekday}`;
+    }
+    
+    // 선택된 센터 설정 표시 함수
+    function displaySelectedService() {
+        let selectedService = localStorage.getItem('selectedService');
+        
+        // 저장된 값이 없으면 기본값으로 방문요양 설정
+        if (!selectedService) {
+            selectedService = 'visitCare';
+            localStorage.setItem('selectedService', selectedService);
+        }
+        
+        const displayElement = document.getElementById('selectedServiceDisplay');
+        
+        if (!displayElement) return;
+        
+        const serviceNames = {
+            'visitCare': '방문요양',
+            'visitBath': '방문목욕',
+            'visitNurse': '방문간호',
+            'dayCare': '주야간보호',
+            'shortTerm': '단기보호',
+            'welfare': '복지용구'
+        };
+        
+        if (selectedService && serviceNames[selectedService]) {
+            // 형광펜 효과를 위한 span으로 감싸기
+            displayElement.innerHTML = `<span class="highlight-yellow">${serviceNames[selectedService]}</span>`;
+        } else {
+            displayElement.textContent = '';
+        }
+    }
+    
+    // 초기 실행 및 1초마다 업데이트
+    updateClock();
+    setInterval(updateClock, 1000);
+    
+    // 선택된 서비스 표시
+    displaySelectedService();
+    
+    // localStorage 변경 감지 (다른 탭에서 변경된 경우)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'selectedService') {
+            displaySelectedService();
+        }
+    });
+    
+    // 같은 탭에서 변경된 경우를 위해 커스텀 이벤트 리스너 추가
+    window.addEventListener('serviceUpdated', () => {
+        displaySelectedService();
+    });
+</script>
+

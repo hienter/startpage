@@ -1,0 +1,97 @@
+<div class="absolute top-4 right-4 z-30">
+    <div class="relative group">
+        <button id="settingsBtn" class="bg-white border-2 border-gray-200 hover:border-black text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            내 센터 설정
+        </button>
+        
+        <!-- 툴팁 -->
+        <div id="tooltip" class="absolute right-0 top-full mt-4 bg-black border-2 border-black rounded-lg shadow-lg px-4 py-2 z-50 whitespace-nowrap">
+            <!-- 꼬리 -->
+            <div class="absolute -top-2 right-6 w-4 h-4 bg-black border-l-2 border-t-2 border-black transform rotate-45"></div>
+            
+            <div class="flex items-center gap-2 relative z-10">
+                <p class="text-sm text-white font-medium">내 센터의 급여 유형을 설정하고 사용하세요.</p>
+                <button id="closeTooltip" class="text-gray-400 hover:text-white transition-colors flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 툴팁 표시 여부 확인
+    function shouldShowTooltip() {
+        const hasClickedSettings = localStorage.getItem('settingsClicked');
+        return !hasClickedSettings;
+    }
+    
+    // 툴팁 숨기기
+    function hideTooltip() {
+        const tooltip = document.getElementById('tooltip');
+        if (tooltip) {
+            tooltip.style.display = 'none';
+        }
+    }
+    
+    // 페이지 로드 시 툴팁 표시 여부 확인
+    if (!shouldShowTooltip()) {
+        hideTooltip();
+    }
+    
+    // 엑스 버튼 클릭 시 툴팁 닫기
+    const closeTooltip = document.getElementById('closeTooltip');
+    if (closeTooltip) {
+        closeTooltip.addEventListener('click', () => {
+            hideTooltip();
+        });
+    }
+    
+    // 설정 버튼 클릭 시 툴팁 영구 숨김 처리 및 모달 열기
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            localStorage.setItem('settingsClicked', 'true');
+            hideTooltip();
+            
+            // 모달 열기
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal) {
+                // 저장된 서비스 불러오기 (service_modal.html의 함수 사용)
+                let savedService = localStorage.getItem('selectedService');
+                
+                // 저장된 값이 없으면 기본값으로 방문요양 설정
+                if (!savedService) {
+                    savedService = 'visitCare';
+                    localStorage.setItem('selectedService', savedService);
+                }
+                
+                const radio = document.querySelector(`input[name="serviceType"][value="${savedService}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    // service_modal.html의 updateRadioStyles 함수 호출
+                    const serviceOptions = document.querySelectorAll('.service-option');
+                    serviceOptions.forEach(option => {
+                        const label = option;
+                        const input = label.querySelector('input[type="radio"]');
+                        if (input && input.checked) {
+                            label.classList.add('border-black');
+                            label.classList.remove('border-gray-200');
+                        } else {
+                            label.classList.remove('border-black');
+                            label.classList.add('border-gray-200');
+                        }
+                    });
+                }
+                settingsModal.classList.remove('hidden');
+            }
+        });
+    }
+</script>
+</div>
+

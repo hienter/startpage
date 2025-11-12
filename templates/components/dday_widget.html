@@ -1,0 +1,50 @@
+<div class="text-center mt-8">
+    <div id="ddayContainer" class="text-xl font-light text-gray-600">
+        D-Day 계산 중...
+    </div>
+</div>
+
+<script>
+    function updateDday() {
+        // 목표 날짜 설정 (예: 2025년 1월 1일)
+        // 필요시 이 날짜를 변경하세요
+        const targetDate = new Date('2025-01-01T00:00:00');
+        const today = new Date();
+        
+        // 시간을 00:00:00으로 설정하여 날짜만 비교
+        today.setHours(0, 0, 0, 0);
+        targetDate.setHours(0, 0, 0, 0);
+        
+        // 날짜 차이 계산 (밀리초)
+        const diffTime = targetDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        const ddayContainer = document.getElementById('ddayContainer');
+        if (!ddayContainer) return;
+        
+        if (diffDays > 0) {
+            ddayContainer.textContent = `D-${diffDays}`;
+        } else if (diffDays === 0) {
+            ddayContainer.textContent = 'D-Day';
+            ddayContainer.classList.remove('text-gray-600');
+            ddayContainer.classList.add('text-black', 'font-semibold');
+        } else {
+            const pastDays = Math.abs(diffDays);
+            ddayContainer.textContent = `D+${pastDays}`;
+            ddayContainer.classList.remove('text-gray-600');
+            ddayContainer.classList.add('text-gray-500');
+        }
+    }
+    
+    // 초기 실행 및 하루마다 업데이트 (자정에 업데이트)
+    updateDday();
+    
+    // 매 시간마다 체크 (자정 확인용)
+    setInterval(() => {
+        const now = new Date();
+        if (now.getHours() === 0 && now.getMinutes() === 0) {
+            updateDday();
+        }
+    }, 60000); // 1분마다 체크
+</script>
+

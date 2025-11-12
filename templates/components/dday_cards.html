@@ -1,0 +1,107 @@
+<div class="w-full max-w-[1280px] mx-auto px-6 md:px-8 lg:px-10 py-4">
+    <!-- 이번 주 섹션 -->
+    <div class="mb-8" id="thisWeekSectionContainer">
+        <h3 class="text-lg font-medium text-black mb-4">이번 주</h3>
+        <div class="dday-masonry-container" id="thisWeekSection" data-columns="1">
+            <!-- JavaScript로 동적 생성 -->
+        </div>
+    </div>
+    
+    <!-- 이번 달 섹션 -->
+    <div class="mb-8" id="thisMonthSectionContainer">
+        <h3 class="text-lg font-medium text-black mb-4">이번 달</h3>
+        <div class="dday-masonry-container" id="thisMonthSection" data-columns="1">
+            <!-- JavaScript로 동적 생성 -->
+        </div>
+    </div>
+    
+    <!-- 올 해 섹션 -->
+    <div class="mb-8" id="otherSectionContainer">
+        <h3 class="text-lg font-medium text-black mb-4">올 해</h3>
+        <div class="dday-masonry-container" id="otherSection" data-columns="1">
+            <!-- JavaScript로 동적 생성 -->
+        </div>
+    </div>
+    
+    <!-- 숨겨진 원본 카드들 (템플릿에서 생성) -->
+    <div class="hidden">
+        {% for dday in ddays %}
+        {% if dday.period == 'weekly' %}
+            {% with actual_date=dday.target_date %}
+        <div class="dday-card-template bg-white border-2 border-gray-200 rounded-lg p-6 text-center hover:border-black transition-colors relative" 
+             data-target-date="{{ dday.target_date|date:'Y-m-d' }}"
+             data-service-type="{{ dday.service_type }}"
+             data-period="{{ dday.period }}"
+             data-title="{{ dday.title }}">
+            <!-- 체크박스 -->
+            <div class="absolute top-2 left-2">
+                <input type="checkbox" class="dday-checkbox w-5 h-5 text-black border-2 border-gray-300 rounded cursor-pointer" 
+                       data-dday-key="{{ dday.title }}_{{ actual_date|date:'Y-m-d' }}">
+            </div>
+            <div class="dday-content">
+                <div class="dday-title text-sm text-gray-500 mb-2">{{ dday.title }}</div>
+                <div class="dday-value text-3xl font-light text-black mb-1">D-0</div>
+                <div class="dday-label text-sm text-gray-600 mb-2">{{ actual_date|date:"Y년 n월 j일" }}</div>
+                <div class="dday-period text-xs text-gray-400">{{ dday.get_period_display }}</div>
+            </div>
+        </div>
+            {% endwith %}
+        {% else %}
+            {% with actual_date=dday.get_actual_target_date %}
+        <div class="dday-card-template bg-white border-2 border-gray-200 rounded-lg p-6 text-center hover:border-black transition-colors relative" 
+             data-target-date="{{ actual_date|date:'Y-m-d' }}"
+             data-service-type="{{ dday.service_type }}"
+             data-period="{{ dday.period }}"
+             data-title="{{ dday.title }}">
+            <!-- 체크박스 -->
+            <div class="absolute top-2 left-2">
+                <input type="checkbox" class="dday-checkbox w-5 h-5 text-black border-2 border-gray-300 rounded cursor-pointer" 
+                       data-dday-key="{{ dday.title }}_{{ actual_date|date:'Y-m-d' }}">
+            </div>
+            <div class="dday-content">
+                <div class="dday-title text-sm text-gray-500 mb-2">{{ dday.title }}</div>
+                <div class="dday-value text-3xl font-light text-black mb-1">D-0</div>
+                <div class="dday-label text-sm text-gray-600 mb-2">{{ actual_date|date:"Y년 n월 j일" }}</div>
+                <div class="dday-period text-xs text-gray-400">{{ dday.get_period_display }}</div>
+            </div>
+        </div>
+            {% endwith %}
+        {% endif %}
+        {% empty %}
+        <div class="col-span-full text-center text-gray-400 py-8">
+            등록된 디데이가 없습니다.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .dday-masonry-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    .dday-masonry-column {
+        display: inline-block;
+        vertical-align: top;
+        width: 100%;
+    }
+    
+    .dday-masonry-column .dday-card {
+        margin-bottom: 24px;
+    }
+    
+    @media (min-width: 768px) {
+        .dday-masonry-container[data-columns="2"] .dday-masonry-column {
+            width: calc(50% - 8px);
+        }
+    }
+    
+    @media (min-width: 1024px) {
+        .dday-masonry-container[data-columns="3"] .dday-masonry-column {
+            width: calc(33.333% - 11px);
+        }
+    }
+    
+</style>
+

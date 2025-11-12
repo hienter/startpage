@@ -1,0 +1,51 @@
+<div id="selectedServiceDisplay" class="text-center mt-6 text-2xl font-light text-gray-600 inline-block">
+    <!-- 선택된 서비스가 있을 때만 표시 -->
+</div>
+
+<script>
+    function displaySelectedService() {
+        let selectedService = localStorage.getItem('selectedService');
+        
+        // 저장된 값이 없으면 기본값으로 방문요양 설정
+        if (!selectedService) {
+            selectedService = 'visitCare';
+            localStorage.setItem('selectedService', selectedService);
+        }
+        
+        const displayElement = document.getElementById('selectedServiceDisplay');
+        
+        if (!displayElement) return;
+        
+        const serviceNames = {
+            'visitCare': '방문요양',
+            'visitBath': '방문목욕',
+            'visitNurse': '방문간호',
+            'dayCare': '주야간보호',
+            'shortTerm': '단기보호',
+            'welfare': '복지용구'
+        };
+        
+        if (selectedService && serviceNames[selectedService]) {
+            // 형광펜 효과를 위한 span으로 감싸기
+            displayElement.innerHTML = `<span class="highlight-yellow">${serviceNames[selectedService]}</span>`;
+        } else {
+            displayElement.textContent = '';
+        }
+    }
+    
+    // 페이지 로드 시 표시
+    displaySelectedService();
+    
+    // localStorage 변경 감지 (다른 탭에서 변경된 경우)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'selectedService') {
+            displaySelectedService();
+        }
+    });
+    
+    // 같은 탭에서 변경된 경우를 위해 커스텀 이벤트 리스너 추가
+    window.addEventListener('serviceUpdated', () => {
+        displaySelectedService();
+    });
+</script>
+
