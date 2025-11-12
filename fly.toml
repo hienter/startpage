@@ -5,7 +5,6 @@ primary_region = "icn"
   builder = "paketobuildpacks/builder:base"
 
 [env]
-  SECRET_KEY = "change-me-in-render-dashboard"
   DEBUG = "False"
   ALLOWED_HOSTS = "startpage.fly.dev"
 
@@ -16,6 +15,10 @@ primary_region = "icn"
   auto_start_machines = true
   min_machines_running = 0
   processes = ["app"]
+
+[[mounts]]
+  source = "sqlite_data"
+  destination = "/data"
 
 [[vm]]
   cpu_kind = "shared"
