@@ -62,8 +62,9 @@
                 return;
             }
             
-            // 현재 URL 설정
-            currentUrlElement.textContent = window.location.href;
+            // 루트 URL 설정 (항상 홈페이지로 설정)
+            const rootUrl = window.location.origin + '/';
+            currentUrlElement.textContent = rootUrl;
             
             // 모달 닫기 함수
             function closeModalFunc(e) {
@@ -85,7 +86,8 @@
                 e.stopPropagation();
                 
                 try {
-                    await navigator.clipboard.writeText(window.location.href);
+                    const rootUrl = window.location.origin + '/';
+                    await navigator.clipboard.writeText(rootUrl);
                     copyUrlBtn.textContent = '복사 완료!';
                     copyUrlBtn.classList.remove('bg-black', 'hover:bg-gray-800');
                     copyUrlBtn.classList.add('bg-green-600', 'hover:bg-green-700');
@@ -129,7 +131,13 @@
         // 전역 함수로 모달 열기 함수 등록
         window.openHomepageModal = function() {
             const homepageModal = document.getElementById('homepageModal');
+            const currentUrlElement = document.getElementById('currentUrl');
             if (homepageModal) {
+                // 모달이 열릴 때마다 루트 URL 업데이트
+                if (currentUrlElement) {
+                    const rootUrl = window.location.origin + '/';
+                    currentUrlElement.textContent = rootUrl;
+                }
                 homepageModal.classList.remove('hidden');
             }
         };
