@@ -546,18 +546,27 @@ function applyMasonryLayoutWithCards(container, cards) {
         columnHeights.push(0);
     }
     
+    // 첫 번째 컬럼의 너비를 먼저 측정 (한 번만)
+    const firstColumnWidth = columnElements[0].offsetWidth || container.offsetWidth / columns;
+    
     // 카드들을 가장 짧은 컬럼에 배치
     cards.forEach((card) => {
-        // 카드를 먼저 임시로 추가하여 높이 측정
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.visibility = 'hidden';
-        tempContainer.style.width = columnElements[0].offsetWidth + 'px';
-        container.appendChild(tempContainer);
-        tempContainer.appendChild(card.cloneNode(true));
-        
-        const cardHeight = tempContainer.offsetHeight;
-        container.removeChild(tempContainer);
+        // 카드 높이를 직접 측정 (DOM에 추가하지 않고)
+        // 카드가 이미 렌더링되어 있다면 offsetHeight 사용, 아니면 추정값 사용
+        let cardHeight;
+        if (card.offsetHeight > 0) {
+            cardHeight = card.offsetHeight;
+        } else {
+            // 카드가 아직 DOM에 없으면 임시로 추가하여 측정 (최소한의 DOM 조작)
+            const wasInDOM = card.parentNode !== null;
+            if (!wasInDOM) {
+                columnElements[0].appendChild(card);
+            }
+            cardHeight = card.offsetHeight;
+            if (!wasInDOM) {
+                columnElements[0].removeChild(card);
+            }
+        }
         
         // 가장 짧은 컬럼 찾기
         let shortestColumnIndex = 0;
@@ -648,7 +657,10 @@ function categorizeAndDisplayDdayCards() {
     const thisMonthCards = [];
     const otherCards = [];
     
-    templates.forEach(template => {
+    // 템플릿을 배열로 변환하여 성능 최적화
+    const templateArray = Array.from(templates);
+    
+    templateArray.forEach(template => {
         const cardServiceType = template.getAttribute('data-service-type');
         
         // 센터 유형 필터링
@@ -708,21 +720,20 @@ function categorizeAndDisplayDdayCards() {
 
 // DOM이 준비되면 초기화
 function initializeDdayCards() {
-    // 템플릿이 로드될 때까지 대기 (최대 10초)
+    // 템플릿이 로드될 때까지 대기 (최적화: 최대 5초, 50ms 간격)
     let attempts = 0;
-    const maxAttempts = 100;
+    const maxAttempts = 100; // 100 * 50ms = 5초
     
     function checkAndInit() {
         attempts++;
         const templates = document.querySelectorAll('.dday-card-template');
         
         if (templates.length > 0) {
-            console.log('디데이 카드 초기화 시작:', templates.length, '개 템플릿 발견');
             categorizeAndDisplayDdayCards();
         } else if (attempts < maxAttempts) {
-            setTimeout(checkAndInit, 100);
+            setTimeout(checkAndInit, 50); // 100ms -> 50ms로 단축
         } else {
-            console.error('디데이 카드 템플릿을 찾을 수 없습니다. DOM 상태:', document.readyState);
+            console.error('디데이 카드 템플릿을 찾을 수 없습니다.');
         }
     }
     

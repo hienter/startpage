@@ -3,12 +3,33 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import Dday, ServiceTypeClick, FeatureVote, UserServicePreference
+from datetime import date
+from .models import Dday, ServiceTypeClick, FeatureVote, UserServicePreference, FeatureRequest
 
 def index(request):
-    ddays = Dday.objects.filter(is_active=True)
+    # 필요한 필드만 선택적으로 로드하여 쿼리 최적화
+    ddays = Dday.objects.filter(is_active=True).only(
+        'id', 'title', 'target_date', 'service_type', 'period', 'order'
+    ).order_by('order', 'id')
+    
+    # date.today()를 한 번만 호출하여 성능 최적화
+    today = date.today()
+    
+    # 템플릿에서 메서드 호출 대신 뷰에서 미리 계산하여 전달
+    ddays_with_dates = []
+    for dday in ddays:
+        # get_actual_target_date에 today를 전달하여 중복 호출 방지
+        actual_date = dday.get_actual_target_date(today=today)
+        # period_display도 미리 계산
+        period_display = dday.get_period_display()
+        ddays_with_dates.append({
+            'dday': dday,
+            'actual_date': actual_date,
+            'period_display': period_display,
+        })
+    
     context = {
-        'ddays': ddays,
+        'ddays_with_dates': ddays_with_dates,
     }
     return render(request, 'index.html', context)
 
@@ -95,99 +116,39 @@ def save_service_preference(request):
 
 def development_features(request):
     """개발 예정 기능 확인하기 페이지 - 투표 형식"""
+    # 활성화된 기능 개발 요청 목록 가져오기
+    feature_requests = FeatureRequest.objects.filter(is_active=True).select_related('related_dday').order_by('order', 'id')
+    
+    # 모든 feature_id 수집
+    feature_ids = [fr.feature_id for fr in feature_requests]
+    
+    # 모든 FeatureVote를 한 번에 가져와서 딕셔너리로 매핑 (N+1 쿼리 최적화)
+    feature_votes = {
+        vote.feature_id: vote
+        for vote in FeatureVote.objects.filter(feature_id__in=feature_ids)
+    }
+    
     # 모든 개발 예정 기능을 하나의 리스트로 통합
     features = []
     
-    # AI 작성하기 기능이 있는 디데이 목록
-    ai_enabled_ddays = ['상태변화 기록', '직원회의', '복지 및 포상', '사례관리 회의']
-    ddays = Dday.objects.filter(
-        is_active=True,
-        title__in=ai_enabled_ddays
-    ).order_by('title')
-    
-    # 고시 준수 AI 챗봇 기능 추가 (디데이에 없는 독립 기능)
-    features.append({
-        'id': 'ai_chatbot',
-        'name': '고시 준수 AI 챗봇',
-        'type': 'ai_writing',
-        'description': '장기요양 관련 고시, 평가매뉴얼, 법령, 판례를 참조하여 질문에 대답하는 AI 챗봇입니다',
-        'service_type': 'visitCare',
-        'vote_count': 0,
-        'status': 'pending',
-    })
-    
-    # 고시 준수 AI 챗봇의 투표 수 가져오기
-    try:
-        chatbot_vote = FeatureVote.objects.get(feature_id='ai_chatbot')
-        features[-1]['vote_count'] = chatbot_vote.vote_count
-        features[-1]['status'] = chatbot_vote.status
-    except FeatureVote.DoesNotExist:
-        pass
-    
-    for dday in ddays:
-        # 각 디데이의 투표 수와 상태는 FeatureVote에서 가져오기
-        feature_id = f'dday_{dday.id}'
-        try:
-            feature_vote = FeatureVote.objects.get(feature_id=feature_id)
-            vote_count = feature_vote.vote_count
-            status = feature_vote.status
-        except FeatureVote.DoesNotExist:
-            vote_count = 0
-            status = 'pending'
+    for feature_request in feature_requests:
+        # 각 기능의 투표 수는 FeatureVote에서 가져오기
+        feature_vote = feature_votes.get(feature_request.feature_id)
+        vote_count = feature_vote.vote_count if feature_vote else 0
+        # 상태는 FeatureRequest에서 가져오기
+        status = feature_request.status
         
-        # 제목을 더 풀어서 작성
-        if dday.title == '상태변화 기록':
-            display_name = '상태변화 기록 AI 작성하기'
-            description = '상태변화 기록을 AI로 작성합니다'
-        elif dday.title == '직원회의':
-            display_name = '직원회의록 AI 작성하기'
-            description = '직원회의록을 AI로 작성합니다'
-        elif dday.title == '복지 및 포상':
-            display_name = '복지 및 포상 내역 AI 작성하기'
-            description = '복지 및 포상 내역을 AI로 작성하기 쉽게 합니다'
-        elif dday.title == '사례관리 회의':
-            display_name = '사례관리 회의록 AI 작성하기'
-            description = '사례관리 회의록을 AI로 작성합니다'
-        else:
-            display_name = dday.title
-            description = f'{dday.get_service_type_display} - {dday.get_period_display}'
+        # service_type 결정: 직접 설정된 경우 또는 related_dday에서 가져오기
+        service_type = feature_request.service_type
+        if not service_type and feature_request.related_dday:
+            service_type = feature_request.related_dday.service_type
         
         features.append({
-            'id': f'dday_{dday.id}',
-            'name': display_name,
-            'type': 'ai_writing',
-            'description': description,
-            'service_type': dday.service_type,
-            'vote_count': vote_count,
-            'status': status,
-        })
-    
-    # 개발중인 급여 유형 목록 (방문요양 제외)
-    developing_service_types = [
-        ('visitBath', '방문목욕 급여 유형 추가', '방문목욕 평가 기준을 반영합니다'),
-        ('visitNurse', '방문간호 급여 유형 추가', '방문간호 평가 기준을 반영합니다'),
-        ('dayCare', '주야간보호 급여 유형 추가', '주야간보호 평가 기준을 반영합니다'),
-        ('shortTerm', '단기보호 급여 유형 추가', '단기보호 평가 기준을 반영합니다'),
-        ('welfare', '복지용구 급여 유형 추가', '복지용구 평가 기준을 반영합니다'),
-    ]
-    
-    for service_code, service_name, service_description in developing_service_types:
-        # 각 급여 유형의 투표 수와 상태는 FeatureVote에서 가져오기
-        feature_id = f'service_{service_code}'
-        try:
-            feature_vote = FeatureVote.objects.get(feature_id=feature_id)
-            vote_count = feature_vote.vote_count
-            status = feature_vote.status
-        except FeatureVote.DoesNotExist:
-            vote_count = 0
-            status = 'pending'
-        
-        features.append({
-            'id': f'service_{service_code}',
-            'name': service_name,
-            'type': 'service_type',
-            'description': service_description,
-            'service_type': service_code,
+            'id': feature_request.feature_id,
+            'name': feature_request.feature_name,
+            'type': feature_request.feature_type,
+            'description': feature_request.description,
+            'service_type': service_type or 'visitCare',  # 기본값
             'vote_count': vote_count,
             'status': status,
         })

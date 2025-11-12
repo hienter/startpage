@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from datetime import timedelta
-from .models import Dday, FeatureVote, UserServicePreference
+from .models import Dday, FeatureVote, UserServicePreference, FeatureRequest
 # ServiceTypeClick은 더 이상 사용되지 않음
 # from .models import ServiceTypeClick
 
@@ -87,7 +87,7 @@ class DdayAdmin(admin.ModelAdmin):
 
 @admin.register(FeatureVote)
 class FeatureVoteAdmin(admin.ModelAdmin):
-    list_display = ['feature_name', 'feature_id', 'status', 'vote_count', 'last_voted_at', 'created_at', 'updated_at']
+    list_display = ['feature_name', 'feature_id', 'status', 'vote_count', 'last_voted_at', 'created_at']
     list_filter = ['status', 'last_voted_at', 'created_at']
     search_fields = ['feature_name', 'feature_id']
     list_editable = ['status']
@@ -96,7 +96,8 @@ class FeatureVoteAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('기본 정보', {
-            'fields': ('feature_id', 'feature_name', 'status')
+            'fields': ('feature_id', 'feature_name', 'status'),
+            'description': '상태를 변경하면 개발 예정 기능 페이지에 반영됩니다. (개발 대기 / 개발 중 / 개발 완료)'
         }),
         ('투표 정보', {
             'fields': ('vote_count', 'last_voted_at')
@@ -119,6 +120,34 @@ class UserServicePreferenceAdmin(admin.ModelAdmin):
     fieldsets = (
         ('통계 정보', {
             'fields': ('service_type', 'selection_count', 'last_selected_at')
+        }),
+        ('시스템 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(FeatureRequest)
+class FeatureRequestAdmin(admin.ModelAdmin):
+    list_display = ['feature_name', 'feature_id', 'status', 'feature_type', 'service_type', 'is_active', 'order', 'created_at']
+    list_filter = ['status', 'is_active', 'feature_type', 'service_type', 'created_at']
+    search_fields = ['feature_name', 'feature_id', 'description']
+    list_editable = ['status', 'is_active', 'order']
+    ordering = ['order', 'id']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('feature_id', 'feature_name', 'description', 'feature_type', 'status'),
+            'description': '상태를 변경하면 개발 예정 기능 페이지에 반영됩니다. (개발 대기 / 개발 중 / 개발 완료)'
+        }),
+        ('연관 정보', {
+            'fields': ('service_type', 'related_dday'),
+            'description': '급여 유형이나 디데이와 연관된 기능인 경우 선택하세요'
+        }),
+        ('표시 설정', {
+            'fields': ('is_active', 'order')
         }),
         ('시스템 정보', {
             'fields': ('created_at', 'updated_at'),

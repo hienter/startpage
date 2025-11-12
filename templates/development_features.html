@@ -58,11 +58,18 @@
                     <div class="text-sm text-gray-500 flex-1 min-w-0">
                         <span class="truncate block">{{ feature.description }}</span>
                     </div>
-                    <div class="text-xs">
+                    <div class="text-xs flex gap-2">
                         {% if feature.type == 'ai_writing' %}
                             <span class="inline-block px-2 py-1 bg-blue-50 text-blue-600 rounded whitespace-nowrap">AI 작성하기</span>
                         {% else %}
                             <span class="inline-block px-2 py-1 bg-green-50 text-green-600 rounded whitespace-nowrap">급여 유형</span>
+                        {% endif %}
+                        {% if feature.status == 'pending' %}
+                            <span class="inline-block px-2 py-1 bg-gray-50 text-gray-600 rounded whitespace-nowrap">개발 대기</span>
+                        {% elif feature.status == 'in_progress' %}
+                            <span class="inline-block px-2 py-1 bg-orange-50 text-orange-600 rounded whitespace-nowrap">개발 중</span>
+                        {% elif feature.status == 'completed' %}
+                            <span class="inline-block px-2 py-1 bg-green-50 text-green-600 rounded whitespace-nowrap">개발 완료</span>
                         {% endif %}
                     </div>
                 </div>
@@ -94,38 +101,39 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 세션별 투표 여부 확인 (localStorage 사용)
-    const VOTED_KEY = 'featureVotedInSession';
-    const hasVoted = localStorage.getItem(VOTED_KEY) === 'true';
+    // 세션별 투표한 기능 ID 저장 (localStorage 사용)
+    const VOTED_FEATURES_KEY = 'votedFeatures';
+    const votedFeatures = JSON.parse(localStorage.getItem(VOTED_FEATURES_KEY) || '[]');
     
     // 투표 버튼 이벤트
     const voteButtons = document.querySelectorAll('.vote-btn');
     
-    // 이미 투표했다면 모든 버튼 비활성화
-    if (hasVoted) {
-        voteButtons.forEach(button => {
+    // 이미 투표한 기능의 버튼만 비활성화
+    voteButtons.forEach(button => {
+        const featureId = button.getAttribute('data-feature-id');
+        if (votedFeatures.includes(featureId)) {
             button.disabled = true;
             button.textContent = '이미 투표함';
             button.classList.remove('bg-black', 'hover:bg-gray-800');
             button.classList.add('bg-gray-400', 'cursor-not-allowed');
-        });
-        return;
-    }
+        }
+    });
     
     voteButtons.forEach(button => {
         button.addEventListener('click', async function(e) {
             e.preventDefault();
             e.stopPropagation();
             
-            // 이미 투표했다면 중단
-            if (localStorage.getItem(VOTED_KEY) === 'true') {
-                alert('이 세션에서는 이미 투표하셨습니다.');
-                return;
-            }
-            
             const featureId = this.getAttribute('data-feature-id');
             const featureName = this.getAttribute('data-feature-name');
             const serviceType = this.getAttribute('data-service-type');
+            
+            // 이미 투표한 기능인지 확인
+            const currentVotedFeatures = JSON.parse(localStorage.getItem(VOTED_FEATURES_KEY) || '[]');
+            if (currentVotedFeatures.includes(featureId)) {
+                alert('이미 투표하신 기능입니다.');
+                return;
+            }
             
             // 버튼 비활성화 (중복 클릭 방지)
             const originalText = this.textContent;
@@ -146,18 +154,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // 세션 투표 완료 플래그 설정
-                    localStorage.setItem(VOTED_KEY, 'true');
-                    
-                    // 모든 투표 버튼 비활성화
-                    voteButtons.forEach(btn => {
-                        if (btn !== this) {
-                            btn.disabled = true;
-                            btn.textContent = '이미 투표함';
-                            btn.classList.remove('bg-black', 'hover:bg-gray-800');
-                            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
-                        }
-                    });
+                    // 투표한 기능 ID를 localStorage에 저장
+                    currentVotedFeatures.push(featureId);
+                    localStorage.setItem(VOTED_FEATURES_KEY, JSON.stringify(currentVotedFeatures));
                     
                     // 투표 수 업데이트
                     const card = this.closest('.bg-white');

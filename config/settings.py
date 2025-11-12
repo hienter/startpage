@@ -28,6 +28,12 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# CSRF 설정 (HTTPS 환경에서 필요)
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://naejanggi.fly.dev'
+).split(',')
+
 
 # Application definition
 
@@ -63,6 +69,15 @@ if DEBUG:
 # WhiteNoise 설정
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# WhiteNoise 캐싱 최적화 (프로덕션 환경)
+if not DEBUG:
+    # Static files 캐싱 설정 (1년)
+    WHITENOISE_MAX_AGE = 31536000  # 1년 (초 단위)
+    # Gzip 압축 활성화
+    WHITENOISE_USE_FINDERS = False
+    # Static files 자동 압축
+    WHITENOISE_AUTOREFRESH = False
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -91,16 +106,22 @@ if os.path.exists('/data'):
     # Fly.io 볼륨이 마운트된 경우
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
+            'ENGINE': 'config.db_backends',  # 커스텀 SQLite 백엔드 (성능 최적화)
             'NAME': '/data/db.sqlite3',
+            'OPTIONS': {
+                'timeout': 20,  # 타임아웃 증가 (네트워크 볼륨 지연 대응)
+            },
         }
     }
 else:
     # 로컬 개발 환경
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
+            'ENGINE': 'config.db_backends',  # 커스텀 SQLite 백엔드 (성능 최적화)
             'NAME': BASE_DIR / 'db.sqlite3',
+            'OPTIONS': {
+                'timeout': 20,
+            },
         }
     }
 
@@ -156,3 +177,10 @@ INTERNAL_IPS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# HTTPS 환경에서 세션 및 CSRF 쿠키 설정
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'

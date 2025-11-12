@@ -7,11 +7,24 @@
     <meta name="description" content="내장기 - 내 장기요양기관 관리하기. 장기요양기관의 디데이 관리, 서비스 유형 설정, 개발 예정 기능 투표 등을 한 곳에서 관리하세요.">
     <meta name="keywords" content="장기요양기관, 내장기, 디데이, 관리, 장기요양">
     <title>{% block title %}내장기: 내 장기요양기관 관리하기{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <!-- DNS prefetch 및 preconnect로 외부 리소스 로딩 최적화 -->
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <!-- Pretendard 폰트 (preload로 최적화) -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" as="style" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" crossorigin />
     <style>
+        /* 기본 스타일 - Tailwind 로드 전에도 적용 */
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #000000;
         }
         .clock-digit {
             font-variant-numeric: tabular-nums;
@@ -43,6 +56,8 @@
             border-color: var(--color-dark-border);
         }
     </style>
+    <!-- Tailwind CSS CDN (head 끝부분에 배치하여 다른 리소스와 병렬 로딩) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-white min-h-screen text-black relative">
